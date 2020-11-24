@@ -31,7 +31,5 @@ Glucose has a score of roughly 0.47 and BMI has a score of roughly 0.29
    c)
 
 
-Which models seem to perform the best for this prediction?
+2) a) Which models seem to perform the best for this prediction?
 
-
-Do the models perform best when considering all the factors or just some of the factors?
