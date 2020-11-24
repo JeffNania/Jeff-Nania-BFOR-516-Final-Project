@@ -21,7 +21,14 @@ to attempt to predict whether or not an individual has diabetes.
 
 Questions
 
-What factor or factors seem to be most closely linked with diabetes?
+1) a) What factor or factors seem to be most closely linked with diabetes?
+
+By using simple correlations, we can see that Glucose and BMI have the highest correlation with Diabetes.
+Glucose has a score of roughly 0.47 and BMI has a score of roughly 0.29
+
+   b) 
+
+   c)
 
 
 Which models seem to perform the best for this prediction?
