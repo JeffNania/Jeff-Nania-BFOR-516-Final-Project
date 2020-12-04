@@ -29,7 +29,6 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import (KFold, ShuffleSplit, StratifiedKFold, StratifiedShuffleSplit)
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.neural_network import MLPClassifier
 from sklearn.model_selection import cross_validate
 from sklearn.model_selection import GridSearchCV
 
@@ -105,16 +104,15 @@ Diabetes_Predictors_count = Diabetes.groupby('Outcome').count()
 
 Diabetes_Predictors_count = Diabetes.groupby('Outcome').agg(['count','mean'])
 
-Diabetes_Positive_count = Diabetes.groupby(Outcome==1).count() ## DOES NOT WORK
 
 
-#%% Create labels for binary classification #FIX THIS
+#%% Create labels for binary classification/Convert digital binary to textual binary
 
 Diabetes.Outcome.replace({0:'No Diabetes',1:'Positive for Diabetes'},inplace=True)
 
 print(Diabetes.Outcome.value_counts())
 
-#%% Segment Data #FIX THIS
+#%% Segment Data
 
 train, test = train_test_split(Diabetes, test_size=0.25)
 
@@ -122,7 +120,7 @@ print("Rows in train:", len(train))
 
 print("Rows in test:", len(test))
 
-#%% Train Model #FIX THIS
+#%% Train Model
 
 #Decision Tree
 
@@ -138,7 +136,7 @@ dt.fit(train.iloc[:, 2:6], train['Outcome'])
 print(dt.get_depth())
 
 
-#%% Predict Labels for Test Data # FIX THIS
+#%% Predict Labels for Test Data (Using Decision Tree)
 
 predicted = dt.predict(test.iloc[:, 2:6])
 
@@ -182,28 +180,116 @@ print("Observed accuracy is:", acc)
 result = metrics.classification_report(test['label'], predicted, digits=4)
 
 print(result)
-#%% Random Forest # Fix This
+#%% Random Forest 
 
-rf = ensemble.RandomForestClassifier()
+rf = RandomForestClassifier()
 
-rf.fit(train[pred_vars], train['DEATH_EVENT'])
+rf.fit(train[Diabetes_Predictors], train['Outcome'])
 
-#%% Naive Bayes # Fix This
+#%% Predict Labels for Test Data (Using Random Forest)
+
+predicted = rf.predict(test[Diabetes_Predictors])
+
+print(predicted[:5]) # show first five predictions
+
+# count test data
+test_labels_stats = Counter(test['Outcome'])
+
+print("Labels in the test data:", test_labels_stats)
+
+# count predicted
+predicted_labels_stats = Counter(predicted)
+
+print("Labels in the predictions:", predicted_labels_stats)
+
+#%% Naive Bayes 
 
 nb = GaussianNB()
 
-nb.fit(train[pred_vars], train['DEATH_EVENT'])
+nb.fit(train[Diabetes_Predictors], train['Outcome'])
 
-#%% Logistic Regression # Fix This
+#%% Predict Labels for Test Data (Using Gaussian Naive Bayes)
+
+predicted = nb.predict(test[Diabetes_Predictors])
+
+print(predicted[:5]) # show first five predictions
+
+# count test data
+test_labels_stats = Counter(test['Outcome'])
+
+print("Labels in the test data:", test_labels_stats)
+
+# count predicted
+predicted_labels_stats = Counter(predicted)
+
+print("Labels in the predictions:", predicted_labels_stats)
+
+#%% Logistic Regression
 
 lr = LogisticRegression()
 
-lr.fit(train[pred_vars], train['DEATH_EVENT'])
+lr.fit(train[Diabetes_Predictors], train['Outcome'])
 
-#%% Evaluation
+#%% Predict Labels for Test Data (Using Logistic Regression)
 
+predicted = lr.predict(test[Diabetes_Predictors])
 
+print(predicted[:5]) # show first five predictions
 
+# count test data
+test_labels_stats = Counter(test['Outcome'])
+
+print("Labels in the test data:", test_labels_stats)
+
+# count predicted
+predicted_labels_stats = Counter(predicted)
+
+print("Labels in the predictions:", predicted_labels_stats)
+
+#%% Evaluation # Fix this
+
+# list of our models
+fitted = [dt, rf, nb, lr]
+
+# empty dataframe to store the results
+Model_Evaluation = pd.DataFrame(columns=['classifier_name', 'fpr','tpr','auc', 
+                                     'log_loss', 'clf_report'])
+
+for clf in fitted:
+    # print the name of the classifier
+    print(clf.__class__.__name__)
+    
+    # get predictions
+    yproba = clf.predict_proba(test[Diabetes_Predictors])
+    yclass = clf.predict(test[Diabetes_Predictors])
+ 
+    """why doesn't this part work below???"""   
+    
+   """ #Convert textual binary back to digital binary
+    Diabetes.Outcome.replace({'No Diabetes':0,'Positive for Diabetes':1},inplace=True)"""
+
+    
+    # auc information
+    fpr, tpr, _ = metrics.roc_curve(test['Outcome'],  yproba[:,1])
+    auc = metrics.roc_auc_score(test['Outcome'], yproba[:,1])
+    
+    # log loss
+    log_loss = metrics.log_loss(test['Outcome'], yproba[:,1])
+    print(log_loss)
+    # add some other stats based on confusion matrix
+    clf_report = metrics.classification_report(test['Outcome'], yclass)
+    print(clf_report)    
+    # add the results to the dataframe
+    result_table = result_table.append({'classifier_name':clf.__class__.__name__,
+                                        'fpr':fpr, 
+                                        'tpr':tpr, 
+                                        'auc':auc,
+                                        'log_loss': log_loss,
+                                        'clf_report': clf_report}, ignore_index=True)
+
+###Below should be easy read out but also not working###
+result_table.set_index('classifier_name', inplace=True)
+display(result_table)
 
 #%% View The Results
 
@@ -211,14 +297,4 @@ lr.fit(train[pred_vars], train['DEATH_EVENT'])
 
 
 
-#%% Questions
-
-# 1) What factor or factors seem to be most closely linked with diabetes?
-"""By using simple correlations, we can see that Glucose and BMI have the highest correlation with Diabetes.
-Glucose has a score of roughly 0.47 and BMI has a score of roughly 0.29"""
-
-
-# 2) Which models seem to perform the best for this prediction?
-
-
-# Do the models perform best when considering all the factors or just some of the factors?
+#%% Questions/Answers Available on separate PDF
